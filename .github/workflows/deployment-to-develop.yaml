@@ -56,7 +56,13 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
+            # Fix git ownership issues
+            sudo git config --global --add safe.directory /var/www/backend_portofolio
+
             cd /var/www/backend_portofolio
+
+            # Fix ownership
+            sudo chown -R $USER:$USER /var/www/backend_portofolio
 
             # Backup current state
             git add . && git stash
@@ -65,7 +71,10 @@ jobs:
             git fetch origin main
             git pull origin main
 
-            # Install dependencies
+            # Clean node_modules if permission issues
+            sudo rm -rf node_modules package-lock.json
+
+            # Install dependencies with proper permissions
             npm install
 
             # Generate Prisma client
@@ -74,11 +83,18 @@ jobs:
             # Run database migrations
             npx prisma migrate deploy
 
+            # Clean dist folder properly
+            sudo rm -rf dist
+
             # Build application
             npm run build
 
-            # Restart PM2 process dengan argument yang benar
-            pm2 restart api-portofolio
+            # Check if PM2 process exists, if not create it
+            if pm2 describe api-portofolio > /dev/null; then
+              pm2 restart api-portofolio
+            else
+              pm2 start dist/index.js --name "api-portofolio" -- --service=rest
+            fi
 
             # Verify deployment
             sleep 5
