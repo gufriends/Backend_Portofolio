@@ -1,39 +1,45 @@
-# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
-
-name: Deploy to Develop Server
+name: Deploy to Production Server
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
-        image: "mysql:5.7"
+      postgres:
+        image: postgres:13
         env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
-          MYSQL_DATABASE: test
+          POSTGRES_PASSWORD: upan123
+          POSTGRES_USER: postgres
+          POSTGRES_DB: portoe
         ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
-      # Downloads a copy of the code in your repository before running CI tests
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      # Performs a clean installation of all dependencies in the `package.json` file
-      # For more information, see https://docs.npmjs.com/cli/ci.html
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
       - name: Install dependencies
         run: npm ci
-      #Performs Unit Testing
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
       - name: Run DB Migration
         run: npx prisma migrate dev --name ciTestMigration
         env:
-          DATABASE_URL: "mysql://root:@127.0.0.1:3306/test?schema=public"
+          DATABASE_URL: "postgresql://postgres:upan123@localhost:5432/portoe"
+
       - name: Run Build
         run: npm run build
 
@@ -42,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: SSH to Server
+      - name: Deploy to Production Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -50,76 +56,35 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
-            cd /home/${{ secrets.USERNAME }}<project_name>/backend
+            cd /var/www/backend_portofolio
 
-      - name: Fetch Code and Reset Directory
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            cd /home/${{ secrets.USERNAME }}<project_name>/backend 
-            git add . && git stash && git fetch origin develop && git pull
-        continue-on-error: false
+            # Backup current state
+            git add . && git stash
 
-      - name: Install dependencies
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            cd /home/${{ secrets.USERNAME }}<project_name>/backend 
+            # Pull latest code from main branch
+            git fetch origin main
+            git pull origin main
+
+            # Install dependencies
             npm install
-          continue-on-error: false
 
-      - name: Deploy Migration to Database
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            cd /home/${{ secrets.USERNAME }}<project_name>/backend
-            npx prisma migrate deploy
-          continue-on-error: false
-
-      - name: Re-Generate Prisma Schema
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            cd /home/${{ secrets.USERNAME }}<project_name>/backend 
+            # Generate Prisma client
             npx prisma generate
-          continue-on-error: false
 
-      - name: Re-Seed Database
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            cd /home/${{ secrets.USERNAME }}<project_name>/backend 
-            npm run seed
-          continue-on-error: false
+            # Run database migrations
+            npx prisma migrate deploy
 
-      - name: Restart PM2 Process
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            cd /home/${{ secrets.USERNAME }}<project_name>/backend 
-            pm2 restart process-name
-          continue-on-error: false
+            # Build application
+            npm run build
+
+            # Restart PM2 process dengan argument yang benar
+            pm2 restart api-portofolio
+
+            # Verify deployment
+            sleep 5
+            pm2 list
+
+            # Test if application is responding
+            curl -f http://localhost:3155 || exit 1
+
+            echo "✅ Deployment completed successfully!"
