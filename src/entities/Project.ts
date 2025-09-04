@@ -8,7 +8,7 @@ export interface ProjectDTO {
   year: string;
   status: string;
   imagePosition: string;
-  userId: string;
+  userId?: string;
   translations: ProjectTranslationDTO[];
   technologies: TechnologyDTO[];
 }

@@ -17,6 +17,8 @@ export async function create(
   user: UserDTO
 ): Promise<ServiceResponse<CreateResponse>> {
   try {
+    if (!user || !user.id) return INVALID_ID_SERVICE_RESPONSE;
+
     const project = await prisma.project.create({
       data: {
         ...data,

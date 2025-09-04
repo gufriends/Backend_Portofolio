@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { response_unauthorized } from "$utils/response.utils";
 import { Context, Next } from "hono";
 
-export function checkJwt(c: Context, next: Next) {
+export async function checkJwt(c: Context, next: Next) {
   const token = c.req.header("Authorization")?.split(" ")[1];
   const JWT_SECRET = process.env.JWT_SECRET ?? "";
   if (!token) {
@@ -16,5 +16,5 @@ export function checkJwt(c: Context, next: Next) {
     console.log(err);
     return response_unauthorized(c, (err as Error).message);
   }
-  next();
+  await next();
 }

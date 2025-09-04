@@ -23,5 +23,5 @@ export async function validateProjectDTO(c: Context, next: Next) {
 
   if (invalidFields.length !== 0)
     return response_bad_request(c, "Validation Error", invalidFields);
-  next();
+  await next();
 }

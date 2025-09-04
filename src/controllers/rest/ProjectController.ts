@@ -12,7 +12,7 @@ import { UserDTO } from "$entities/User";
 
 export async function create(c: Context): Promise<TypedResponse> {
   const data: ProjectDTO = await c.req.json();
-  const user = c.get("user") as UserDTO;
+  const user = c.get("jwtPayload") as UserDTO;
 
   const serviceResponse = await ProjectService.create(data, user);
 
