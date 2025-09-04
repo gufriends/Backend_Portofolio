@@ -1,30 +1,17 @@
-
-import {Hono} from "hono"
-import * as ProjectController from "$controllers/rest/ProjectController"
+import { Hono } from "hono";
+import * as ProjectController from "$controllers/rest/ProjectController";
+import * as AuthMiddleware from "$middlewares/authMiddleware";
 
 const ProjectRoutes = new Hono();
 
+ProjectRoutes.get("/", ProjectController.getAll);
 
-ProjectRoutes.get("/",
-    ProjectController.getAll
-)
+ProjectRoutes.get("/:id", ProjectController.getById);
 
+ProjectRoutes.post("/", AuthMiddleware.checkJwt, ProjectController.create);
 
-ProjectRoutes.get("/:id",
-    ProjectController.getById
-)
+ProjectRoutes.put("/:id", ProjectController.update);
 
+ProjectRoutes.delete("/", ProjectController.deleteByIds);
 
-ProjectRoutes.post("/",
-    ProjectController.create
-)
-
-ProjectRoutes.put("/:id",
-    ProjectController.update
-)
-
-ProjectRoutes.delete("/",
-    ProjectController.deleteByIds
-)
-
-export default ProjectRoutes
+export default ProjectRoutes;

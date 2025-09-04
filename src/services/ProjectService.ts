@@ -9,15 +9,18 @@ import { prisma } from "$utils/prisma.utils";
 import { Project } from "@prisma/client";
 import { ProjectDTO } from "$entities/Project";
 import { buildFilterQueryLimitOffsetV2 } from "./helpers/FilterQueryV2";
+import { UserDTO } from "$entities/User";
 
 export type CreateResponse = Project | {};
 export async function create(
-  data: ProjectDTO
+  data: ProjectDTO,
+  user: UserDTO
 ): Promise<ServiceResponse<CreateResponse>> {
   try {
     const project = await prisma.project.create({
       data: {
         ...data,
+        userId: user.id,
         translations: {
           create: data.translations,
         },
