@@ -1,10 +1,12 @@
 import "../../src/paths";
 import { seedAdmin } from "./seedAdmin";
 import { prisma } from "../../src/utils/prisma.utils";
+import { seedTecnology } from "./seedTechnology";
 
 async function seed() {
   console.log("Start seeding...");
   await seedAdmin(prisma);
+  await seedTecnology(prisma);
   console.log("Seeding finished.");
 }
 

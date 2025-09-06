@@ -21,41 +21,53 @@ model User {
 }
 
 model Project {
-  id            String       @id @default(cuid())
+  id            String               @id @default(cuid())
   imageSrc      String?
   projectUrl    String?
   year          String
   status        String
-  technologies  Technology[]
-  imagePosition String?      @default("left")
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  technologies  ProjectTechnology[]  
+  imagePosition String?              @default("left")
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
   userId        String
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  translations  ProjectTranslation[]
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translations  ProjectBody[]
 }
 
-model ProjectTranslation {
+model ProjectBody {
   id          String  @id @default(cuid())
   projectId   String
-  language    String  // 'id' atau 'en'
+  language    String 
   title       String
   category    String
   description String
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, language])
-  @@map("project_translations")
+  @@map("project_body")
 }
 
 model Technology {
-  id        String  @id @default(cuid())
-  icon      String
-  alt       String
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
+  id       String             @id @default(cuid())
+  name     String             @unique 
+  icon     String
+  alt      String
+  projects ProjectTechnology[] // Many-to-many relation
+  
   @@map("technologies")
+}
+
+
+model ProjectTechnology {
+  id           String     @id @default(cuid())
+  projectId    String
+  technologyId String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, technologyId]) 
+  @@map("project_technologies")
 }
 
 model Experience {

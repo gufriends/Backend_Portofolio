@@ -1,5 +1,5 @@
-import { ProjectTranslationDTO } from "./ProjectTranslation";
-import { TechnologyDTO } from "./Technology";
+import { ProjectTechnologyDTO } from "./ProjectTechnology";
+import { ProjectBodyDTO } from "./ProjectTranslation";
 
 export interface ProjectDTO {
   id: string;
@@ -8,7 +8,8 @@ export interface ProjectDTO {
   year: string;
   status: string;
   imagePosition: string;
-  userId?: string;
-  translations: ProjectTranslationDTO[];
-  technologies: TechnologyDTO[];
+  translations: ProjectBodyDTO[];
+  userId: string;
+  technologies: ProjectTechnologyDTO[];
+  technologyIds: string[];
 }

@@ -21,6 +21,32 @@ export async function validateProjectDTO(c: Context, next: Next) {
       generateErrorStructure("imagePosition", "imagePosition cannot be empty")
     );
 
+  // Validate translations array
+  if (
+    !data.translations ||
+    !Array.isArray(data.translations) ||
+    data.translations.length === 0
+  )
+    invalidFields.push(
+      generateErrorStructure(
+        "translations",
+        "translations must be a non-empty array"
+      )
+    );
+
+  // Validate technologyIds array
+  if (
+    !data.technologyIds ||
+    !Array.isArray(data.technologyIds) ||
+    data.technologyIds.length === 0
+  )
+    invalidFields.push(
+      generateErrorStructure(
+        "technologyIds",
+        "technologyIds must be a non-empty array"
+      )
+    );
+
   if (invalidFields.length !== 0)
     return response_bad_request(c, "Validation Error", invalidFields);
   await next();

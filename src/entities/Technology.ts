@@ -1,6 +1,6 @@
 export interface TechnologyDTO {
-    id: string;
-    icon: string;
-    alt: string;
-    projectId: string;
+  id: string;
+  name: string;
+  icon: string;
+  alt: string;
 }

@@ -19,20 +19,29 @@ export async function create(
   try {
     if (!user || !user.id) return INVALID_ID_SERVICE_RESPONSE;
 
+    const { technologyIds, translations, ...projectData } = data;
+
     const project = await prisma.project.create({
       data: {
-        ...data,
+        ...projectData,
         userId: user.id,
         translations: {
-          create: data.translations,
+          create: translations,
         },
         technologies: {
-          create: data.technologies,
+          create:
+            technologyIds?.map((techId) => ({
+              technologyId: techId,
+            })) || [],
         },
       },
       include: {
         translations: true,
-        technologies: true,
+        technologies: {
+          include: {
+            technology: true,
+          },
+        },
       },
     });
 
@@ -45,7 +54,6 @@ export async function create(
     return INTERNAL_SERVER_ERROR_SERVICE_RESPONSE;
   }
 }
-
 export type GetAllResponse = PagedList<Project[]> | {};
 export async function getAll(
   filters: FilteringQueryV2
@@ -130,19 +138,12 @@ export async function update(
       ...projectData,
     };
 
-    // Handle translations update (upsert approach)
-    // if (translations) {
-    //   updateData.translations = {
-    //     deleteMany: {}, // Delete all existing
-    //     create: translations, // Create new ones
-    //   };
-    // }
-
-    // Handle technologies update (upsert approach)
     if (technologies) {
       updateData.technologies = {
         deleteMany: {},
-        create: technologies,
+        create: technologies.map((tech) => ({
+          technologyId: tech.technologyId,
+        })),
       };
     }
 
