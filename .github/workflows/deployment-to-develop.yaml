@@ -61,8 +61,8 @@ jobs:
 
             cd /var/www/backend_portofolio
 
-            # Fix ownership
-            sudo chown -R $USER:$USER /var/www/backend_portofolio
+            # # Fix ownership
+            # sudo chown -R $USER:$USER /var/www/backend_portofolio
 
             # Backup current state
             git add . && git stash

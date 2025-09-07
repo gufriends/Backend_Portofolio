@@ -1,4 +1,3 @@
-import { ProjectTechnologyDTO } from "./ProjectTechnology";
 import { ProjectBodyDTO } from "./ProjectTranslation";
 
 export interface ProjectDTO {
@@ -10,6 +9,4 @@ export interface ProjectDTO {
   imagePosition: string;
   translations: ProjectBodyDTO[];
   userId: string;
-  technologies: ProjectTechnologyDTO[];
-  technologyIds: string[];
 }

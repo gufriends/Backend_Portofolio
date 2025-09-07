@@ -19,7 +19,7 @@ export async function create(
   try {
     if (!user || !user.id) return INVALID_ID_SERVICE_RESPONSE;
 
-    const { technologyIds, translations, ...projectData } = data;
+    const { translations, ...projectData } = data;
 
     const project = await prisma.project.create({
       data: {
@@ -27,12 +27,6 @@ export async function create(
         userId: user.id,
         translations: {
           create: translations,
-        },
-        technologies: {
-          create:
-            technologyIds?.map((techId) => ({
-              technologyId: techId,
-            })) || [],
         },
       },
       include: {
@@ -131,21 +125,21 @@ export async function update(
 
     if (!existingProject) return INVALID_ID_SERVICE_RESPONSE;
 
-    const { technologies, ...projectData } = data;
+    const { ...projectData } = data;
 
     // Build update data dynamically
     const updateData: any = {
       ...projectData,
     };
 
-    if (technologies) {
-      updateData.technologies = {
-        deleteMany: {},
-        create: technologies.map((tech) => ({
-          technologyId: tech.technologyId,
-        })),
-      };
-    }
+    // if (technologies) {
+    //   updateData.technologies = {
+    //     deleteMany: {},
+    //     create: technologies.map((tech) => ({
+    //       technologyId: tech.technologyId,
+    //     })),
+    //   };
+    // }
 
     const updatedProject = await prisma.project.update({
       where: { id },
