@@ -1,60 +1,67 @@
 import { FilteringQueryV2, RangedFilter } from "$entities/Query";
 
+function buildSearchQuery(
+  searchFilters: Record<string, any | any[] | null>
+): any[] {
+  let whereClauseAndResult: any = [];
+  let orQuerySearchArray: any[] = [];
 
-function buildSearchQuery(searchFilters:Record<string, any | any[] | null>):any[]{
-  let whereClauseAndResult:any = [];
-  let orQuerySearchArray:any[] = [];
-  
   const isMultiKey = Object.values(searchFilters).length > 1;
-  
+
   for (const key in searchFilters) {
-    const valueToSearch = searchFilters[key]
+    const valueToSearch = searchFilters[key];
     //Additional null safe checking for guarantee
     if (valueToSearch == null) continue;
-    
-    let searchQuery:any = {}
-    
+
+    let searchQuery: any = {};
+
     if (key.includes(".")) {
       let [relation, column] = key.split(".");
 
-      if(valueToSearch != null ){
+      if (valueToSearch != null) {
+        // PERBAIKAN: Untuk relasi one-to-many, gunakan 'some'
         searchQuery = {
-          [`${relation}`]:{
-            [`${column}`]: {
-              contains: valueToSearch
-            }
-          } 
-        }
-        isMultiKey ? orQuerySearchArray.push(searchQuery) : whereClauseAndResult.push(searchQuery)      
+          [`${relation}`]: {
+            some: {
+              [`${column}`]: {
+                contains: valueToSearch,
+              },
+            },
+          },
+        };
+        isMultiKey
+          ? orQuerySearchArray.push(searchQuery)
+          : whereClauseAndResult.push(searchQuery);
       }
       continue;
     }
 
-    if(valueToSearch != null ){
+    if (valueToSearch != null) {
       searchQuery = {
         [`${key}`]: {
-          contains: valueToSearch
-        }
-      }
-      isMultiKey ? orQuerySearchArray.push(searchQuery) : whereClauseAndResult.push(searchQuery)
+          contains: valueToSearch,
+        },
+      };
+      isMultiKey
+        ? orQuerySearchArray.push(searchQuery)
+        : whereClauseAndResult.push(searchQuery);
     }
-    
   }
 
-  if(isMultiKey){
+  if (isMultiKey) {
     whereClauseAndResult.push({
-      OR: orQuerySearchArray
-    })
+      OR: orQuerySearchArray,
+    });
   }
 
   return whereClauseAndResult;
 }
 
-function buildWhereQuery(filters:Record<string, any | any[] | null>):any[]{
-  let whereClauseAndResult:any = [];
+function buildWhereQuery(filters: Record<string, any | any[] | null>): any[] {
+  let whereClauseAndResult: any = [];
   for (const key in filters) {
     const valueToFilter = filters[key];
-      
+
     //Additional early null safe checking for guarantee
     if (valueToFilter == null) continue;
 
@@ -62,95 +69,96 @@ function buildWhereQuery(filters:Record<string, any | any[] | null>):any[]{
     if (key.includes(".")) {
       let [relation, column] = key.split(".");
 
-      if(Array.isArray(valueToFilter) && valueToFilter != null ){
-        const orQueryArray = valueToFilter.map((value)=>(
-          {
-            [`${relation}`]:{
-              [`${column}`]: value
-            } 
-          }
-        ))
+      if (Array.isArray(valueToFilter) && valueToFilter != null) {
+        // PERBAIKAN: Untuk relasi one-to-many dengan multiple values
+        const orConditions = valueToFilter.map((value) => ({
+          [`${relation}`]: {
+            some: {
+              [`${column}`]: value,
+            },
+          },
+        }));
+
         whereClauseAndResult.push({
-          OR:orQueryArray
-        })
+          OR: orConditions,
+        });
       }
-      
-      if(!Array.isArray(valueToFilter) && valueToFilter != null) {
+
+      if (!Array.isArray(valueToFilter) && valueToFilter != null) {
+        // PERBAIKAN: Untuk relasi one-to-many dengan single value
         whereClauseAndResult.push({
-            [`${relation}`]:{
-              [`${column}`]: valueToFilter
-            } 
-        })
+          [`${relation}`]: {
+            some: {
+              [`${column}`]: valueToFilter,
+            },
+          },
+        });
       }
       continue;
     }
 
-    if(Array.isArray(valueToFilter) && valueToFilter != null ){
+    if (Array.isArray(valueToFilter) && valueToFilter != null) {
       const valueToFilterArray = valueToFilter;
-      const orQueryArray = valueToFilterArray.map((value)=>(
-        {
-          [`${key}`]: value
-        }
-      ))
       whereClauseAndResult.push({
-        OR:orQueryArray
-      })
-    } if(!Array.isArray(valueToFilter) && valueToFilter != null) {
-      whereClauseAndResult.push( {
-          [`${key}`]: valueToFilter
-        })
+        [`${key}`]: {
+          in: valueToFilterArray,
+        },
+      });
     }
-    
+
+    if (!Array.isArray(valueToFilter) && valueToFilter != null) {
+      whereClauseAndResult.push({
+        [`${key}`]: valueToFilter,
+      });
+    }
   }
 
-  return whereClauseAndResult
-} 
+  return whereClauseAndResult;
+}
 
-
-function isValidDate(dateString: any): boolean{
+function isValidDate(dateString: any): boolean {
   if (typeof dateString !== "string") {
-    return false
+    return false;
   }
-  const dateRegex = /^(?:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z|\d{4}-\d{2}-\d{2})$/;
+  const dateRegex =
+    /^(?:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z|\d{4}-\d{2}-\d{2})$/;
   return dateRegex.test(dateString);
 }
 
 function parseAndCheckRangeFilter(range: RangedFilter): any {
-  if(isValidDate(range.start) && isValidDate(range.end)){
-      range.start = new Date(range.start)
-      range.end = new Date(range.end)
-    } else {
-      range.start = range.start 
-      range.end = range.end
+  if (isValidDate(range.start) && isValidDate(range.end)) {
+    range.start = new Date(range.start);
+    range.end = new Date(range.end);
+  } else {
+    range.start = range.start;
+    range.end = range.end;
   }
-  
-  return range
+
+  return range;
 }
 
-function buildRangedFilter(rangedFilters:RangedFilter[]):any[]{
-  const whereClauseAndResult:any[] = [];
+function buildRangedFilter(rangedFilters: RangedFilter[]): any[] {
+  const whereClauseAndResult: any[] = [];
 
   rangedFilters.forEach((range: RangedFilter) => {
-    range = parseAndCheckRangeFilter(range)
+    range = parseAndCheckRangeFilter(range);
     whereClauseAndResult.push({
-      [`${range.key}`]:{
+      [`${range.key}`]: {
         gte: range.start,
-        lte: range.end
-      }
-    })
-  })
+        lte: range.end,
+      },
+    });
+  });
 
-  return whereClauseAndResult
+  return whereClauseAndResult;
 }
-
 
 export function buildFilterQueryLimitOffsetV2(filter: FilteringQueryV2) {
   let usedFilter: any = {
     where: {
-      AND:[]
+      AND: [],
     },
-    orderBy: {
-    },
+    orderBy: {},
   };
 
   /* This is the `inference-engine` for dynamic filtering 
@@ -172,48 +180,51 @@ export function buildFilterQueryLimitOffsetV2(filter: FilteringQueryV2) {
   
   */
   if (filter.filters) {
-    usedFilter.where.AND = buildWhereQuery(filter.filters)
-  }
-  
-  if(filter.searchFilters){
-    
-    usedFilter.where.AND = buildSearchQuery(filter.searchFilters).reduce((arr,v)=>{
-      arr.push(v)
-      return arr
-    },usedFilter.where.AND)
+    usedFilter.where.AND = buildWhereQuery(filter.filters);
   }
 
-  if(filter.rangedFilters){
-    usedFilter.where.AND = buildRangedFilter(filter.rangedFilters).reduce((arr,v)=>{
-      arr.push(v)
-      return arr
-    },usedFilter.where.AND)
+  if (filter.searchFilters) {
+    usedFilter.where.AND = buildSearchQuery(filter.searchFilters).reduce(
+      (arr, v) => {
+        arr.push(v);
+        return arr;
+      },
+      usedFilter.where.AND
+    );
+  }
+
+  if (filter.rangedFilters) {
+    usedFilter.where.AND = buildRangedFilter(filter.rangedFilters).reduce(
+      (arr, v) => {
+        arr.push(v);
+        return arr;
+      },
+      usedFilter.where.AND
+    );
   }
 
   if (filter.orderKey) {
     const orderRule = filter.orderRule ?? "asc";
     usedFilter.orderBy = {
-        [`${filter.orderKey}`]: `${orderRule}`,
-      }
+      [`${filter.orderKey}`]: `${orderRule}`,
+    };
   }
-
 
   // Default is take 10 rows, page 1 (skip 0, means we are at page 1 at the paging result.)
   let take = 10;
   let skip = 0;
 
-  if(filter.page){
-    if(filter.rows){
-      skip = (filter.page - 1)  * filter.rows;
+  if (filter.page) {
+    if (filter.rows) {
+      skip = (filter.page - 1) * filter.rows;
       take = filter.rows;
     } else {
       skip = 10 * (filter.page - 1);
     }
-  } 
+  }
 
   usedFilter.take = take;
   usedFilter.skip = skip;
-
 
   return usedFilter;
 }

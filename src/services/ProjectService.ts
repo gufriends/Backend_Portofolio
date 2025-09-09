@@ -57,7 +57,18 @@ export async function getAll(
 
     usedFilters.include = {
       translations: true,
-      technologies: true,
+      technologies: {
+        include: {
+          technology: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
     };
 
     const [project, totalData] = await Promise.all([
