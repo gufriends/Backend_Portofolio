@@ -28,7 +28,7 @@ router.route("/upload", RoutesRegistry.UploadRoutes);
 router.route("/technologies", RoutesRegistry.TechnologyRoutes);
 
 router.get("/", (c: Context) => {
-  return response_success(c, "Akuuu sayang banget sama ipa!!!");
+  return response_success(c, "ipa sayang upan");
 });
 
 router.get("/robots.txt", (c: Context) => {

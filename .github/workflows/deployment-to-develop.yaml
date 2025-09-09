@@ -89,12 +89,9 @@ jobs:
             # Build application
             npm run build
 
-            # Check if PM2 process exists, if not create it
-            if pm2 describe api-portofolio > /dev/null; then
-              pm2 restart api-portofolio
-            else
-              pm2 start dist/index.js --name "api-portofolio" -- --service=rest
-            fi
+            pm2 restart api-portofolio
+
+
 
             # Verify deployment
             sleep 5
