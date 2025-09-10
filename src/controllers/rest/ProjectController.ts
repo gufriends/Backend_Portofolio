@@ -9,6 +9,7 @@ import { ProjectDTO } from "$entities/Project";
 import { FilteringQueryV2 } from "$entities/Query";
 import { checkFilteringQueryV2 } from "$controllers/helpers/CheckFilteringQuery";
 import { UserDTO } from "$entities/User";
+import { ProjectTechnologyDTO } from "$entities/ProjectTechnology";
 
 export async function create(c: Context): Promise<TypedResponse> {
   const data: ProjectDTO = await c.req.json();
@@ -26,6 +27,50 @@ export async function create(c: Context): Promise<TypedResponse> {
     c,
     serviceResponse.data,
     "Successfully created new Project!"
+  );
+}
+
+export async function createProjectTechnology(
+  c: Context
+): Promise<TypedResponse> {
+  const data: ProjectTechnologyDTO = await c.req.json();
+  const ProjectId = c.req.param("id");
+
+  const serviceResponse = await ProjectService.createProjectTechnology(
+    ProjectId,
+    data
+  );
+
+  if (!serviceResponse.status) {
+    return handleServiceErrorWithResponse(c, serviceResponse);
+  }
+
+  return response_created(
+    c,
+    serviceResponse.data,
+    "Successfully created new Project Technology!"
+  );
+}
+
+export async function getProjectTechnologies(
+  c: Context
+): Promise<TypedResponse> {
+  const projectId = c.req.param("id");
+  const filters: FilteringQueryV2 = checkFilteringQueryV2(c);
+
+  const serviceResponse = await ProjectService.getProjectTechnologies(
+    projectId,
+    filters
+  );
+
+  if (!serviceResponse.status) {
+    return handleServiceErrorWithResponse(c, serviceResponse);
+  }
+
+  return response_success(
+    c,
+    serviceResponse.data,
+    "Successfully fetched all Project Technologies!"
   );
 }
 
@@ -75,6 +120,28 @@ export async function update(c: Context): Promise<TypedResponse> {
     c,
     serviceResponse.data,
     "Successfully updated Project!"
+  );
+}
+
+export async function deleteProjectTechnologies(
+  c: Context
+): Promise<TypedResponse> {
+  const id = c.req.param("id");
+  const ids = c.req.query("ids") as string;
+
+  const serviceResponse = await ProjectService.deleteProjectTechnologies(
+    id,
+    ids
+  );
+
+  if (!serviceResponse.status) {
+    return handleServiceErrorWithResponse(c, serviceResponse);
+  }
+
+  return response_success(
+    c,
+    serviceResponse.data,
+    "Successfully deleted Project!"
   );
 }
 

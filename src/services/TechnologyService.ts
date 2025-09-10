@@ -119,6 +119,30 @@ export async function deleteByIds(ids: string): Promise<ServiceResponse<{}>> {
   try {
     const idArray: string[] = JSON.parse(ids);
 
+    // Check if all IDs exist in the database
+    const existingTechnologies = await prisma.technology.findMany({
+      where: {
+        id: {
+          in: idArray,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const existingIds = existingTechnologies.map((tech) => tech.id);
+    const nonExistentIds = idArray.filter((id) => !existingIds.includes(id));
+
+    if (nonExistentIds.length > 0) {
+      Logger.error(
+        `TechnologyService.deleteByIds: Invalid IDs found: ${nonExistentIds.join(
+          ", "
+        )}`
+      );
+      return INVALID_ID_SERVICE_RESPONSE;
+    }
+
     idArray.forEach(async (id) => {
       await prisma.technology.delete({
         where: {
